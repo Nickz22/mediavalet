@@ -1,0 +1,3 @@
+// deprecate
+public class RetroactiveAnalysisEventBatch {
+}
