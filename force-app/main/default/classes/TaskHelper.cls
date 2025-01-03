@@ -285,6 +285,7 @@ public with sharing class TaskHelper {
       }
       return false;
     }
+    System.debug(JSON.serialize(filterString));
     FieldFilter fieldFilter = (FieldFilter) JSON.deserialize(
       filterString,
       FieldFilter.class
@@ -347,5 +348,89 @@ public with sharing class TaskHelper {
       record = record.getSObject(keyPath[i]);
     }
     return record;
+  }
+
+  // legacy isApplicable used for accounts and opps
+  public static boolean isApplicable(
+    SObject record,
+    String filterString,
+    Pattern filterPattern
+  ) {
+    System.debug(filterString + ' ' + filterPattern);
+    // for blank filters on sobjects that are not activities, never match
+    if (
+      String.isBlank(filterString) &&
+      record.Id.getSobjectType() != Task.SObjectType &&
+      record.Id.getSobjectType() != Event.SObjectType
+    ) {
+      return false;
+    }
+    if (
+      String.isBlank(filterString) &&
+      (record.Id.getSobjectType() == Task.SObjectType ||
+      record.Id.getSobjectType() == Event.SObjectType)
+    ) {
+      System.debug('isApplicable filterString is blank');
+      String subject = record.get('Subject') != null
+        ? String.valueOf(record.get('Subject'))
+        : null;
+      // Maintain backword functionality if filter string is blank
+      System.debug('isApplicable filterPattern:' + filterPattern);
+      boolean returnResponse =
+        filterPattern == null || filterPattern.matcher(subject).find();
+      System.debug('isApplicable returnResponse:' + returnResponse);
+      return returnResponse;
+    }
+    System.debug('isApplicable filterString is not blank');
+    Map<Integer, String> criteriaRes = new Map<Integer, String>();
+    FieldFilter fieldFilter = (FieldFilter) JSON.deserialize(
+      filterString,
+      FieldFilter.class
+    );
+    if (
+      fieldFilter.filters == null ||
+      fieldFilter.filters.isEmpty() ||
+      fieldFilter.disabled == true
+    ) {
+      // Filter is disabled than return false;
+      return fieldFilter.disabled != true;
+    }
+    integer count = 1;
+    String filterLogic = fieldFilter.filterLogic;
+    for (FieldFilterRow rowFilter : fieldFilter.filters) {
+      Object fieldValue = null;
+      String[] keyPath = rowFilter.field.split('\\.');
+      SObject tempObj = record;
+      for (integer i = 0; i < keyPath.size(); i++) {
+        if (tempObj == null) {
+          break;
+        }
+        if (i + 1 == keyPath.size()) {
+          fieldValue = tempObj.get(keyPath.get(i));
+        } else {
+          tempObj = tempObj.getSObject(keyPath.get(i));
+        }
+      }
+      String taskValue = fieldValue == null ? '' : String.valueOf(fieldValue);
+      System.debug('fieldValue :: ' + taskValue);
+      String operator = rowFilter.operator;
+      String filterVal = rowFilter.value == null ? '' : rowFilter.value;
+      Boolean matchFilter = matchesFilter(operator, taskValue, filterVal);
+      criteriaRes.put(count, String.valueof(matchFilter));
+      count++;
+      System.debug('match: ' + criteriaRes);
+    }
+    if (String.isBlank(filterLogic)) {
+      filterLogic = String.join(criteriaRes.values(), ' AND ');
+    } else {
+      for (Integer factNumber = count - 1; factNumber > 0; factNumber--) {
+        filterLogic = filterLogic.replace(
+          String.valueOf(factNumber),
+          criteriaRes.get(factNumber)
+        );
+      }
+    }
+    boolean eval = BooleanExpression.evaluate(filterLogic);
+    return eval;
   }
 }
