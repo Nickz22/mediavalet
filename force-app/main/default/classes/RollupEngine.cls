@@ -163,7 +163,8 @@ public with sharing class RollupEngine {
     List<Contact> contacts
   ) {
     Map<Id, ActivityStats> newTaskStatByWhoId = TaskHelper.getActivityStatsByWhoId(
-      newTasks
+      newTasks,
+      new Map<Id, Contact>(contacts)
     );
 
     return this.createAndUpdateOcasViaMeetingSet(newTaskStatByWhoId, contacts);

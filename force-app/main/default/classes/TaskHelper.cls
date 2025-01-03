@@ -290,6 +290,7 @@ public with sharing class TaskHelper {
       filterString,
       FieldFilter.class
     );
+    fieldFilter.disabled = fieldFilter.disabled == null ? false : fieldFilter.disabled;
     if (
       fieldFilter.filters == null ||
       fieldFilter.filters.isEmpty() ||

@@ -2,7 +2,7 @@
 private class MatchesParentCriteriaTest {
   @isTest
   static void testParentCriteriaWithTaskFilter() {
-    // System.runAs(TestFactory.ioAgent) {
+    System.runAs(TestFactory.ioAgent) {
       // Build a sample filter referencing parent fields
       FieldFilter filter = new FieldFilter();
       filter.disabled = false;
@@ -22,7 +22,6 @@ private class MatchesParentCriteriaTest {
         AccountId = acc.Id
       );
       insert con;
-      con = new ContactSelector().selectContactsWithAllAccountFields(new Set<Id>{con.Id})[0];
       Task t = new Task(
         Subject = 'Hello from Parent Criteria Test',
         WhoId = con.Id
@@ -31,6 +30,7 @@ private class MatchesParentCriteriaTest {
 
       // Confirm TaskHelper.isApplicable picks up on parent's field
       Test.startTest();
+      con = new ContactSelector().selectContactsWithAllAccountFields(new Set<Id>{con.Id})[0];
       ActivityContactWrapper criteriaWrapper = new ActivityContactWrapper(t, con);
       Boolean applicable = TaskHelper.isApplicable(criteriaWrapper, filterString, null);
       Test.stopTest();
@@ -39,6 +39,6 @@ private class MatchesParentCriteriaTest {
         applicable,
         'Filter should match on parent Account name and Task subject'
       );
-    // }
+    }
   }
 }
