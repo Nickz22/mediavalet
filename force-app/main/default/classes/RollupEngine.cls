@@ -63,19 +63,22 @@ public with sharing class RollupEngine {
 
     Set<Id> whoIds = Pluck.ids(newTasks, C.ACTIVITY_WHO_ID_FIELD);
     Map<Id, Contact> whoById = new Map<Id, Contact>(
-      new ContactSelector().selectContactsByIds(whoIds)
+      new ContactSelector().selectContactsWithAllAccountFields(whoIds)
     );
     Set<Id> accountIds = Pluck.ids(whoById.values(), C.ACCOUNT_ID_FIELD);
 
+
     Map<Id, ActivityStats> newActivityStatByWhoId = TaskHelper.getActivityStatsByWhoId(
-      newTasks
+      newTasks,
+      whoById
     );
     Map<Id, ActivityStats> nonNewActivityStatByWhoId = TaskHelper.getActivityStatsByWhoId(
       new TaskSelector()
         .selectIoOwnedTasksWithinTrackingPeriodByWhoIdsNotInIds(
           whoIds,
           Pluck.ids(newTasks, C.ID_FIELD)
-        )
+        ),
+      whoById
     );
 
     Map<Id, SObject> osByAccountId = Mapper.singleById(

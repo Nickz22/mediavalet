@@ -70,7 +70,8 @@ public with sharing class TaskHelper {
    */
   public static Map<Id, ActivityStats> getTaskActivityStatusMap(
     Map<Id, ActivityStats> activitiesStatsMap,
-    Task theTask
+    Task theTask,
+    Contact contact
   ) {
     Settings__mdt thisSetting = settings;
     ActivityStats stats = activitiesStatsMap.get(theTask.WhoId);
@@ -88,8 +89,12 @@ public with sharing class TaskHelper {
       stats.activityIds.add(theTask.Id);
     }
 
-    Boolean inboundMatched = isApplicable(
+    ActivityContactWrapper criteriaWrapper = new ActivityContactWrapper(
       theTask,
+      contact
+    );
+    Boolean inboundMatched = isApplicable(
+      criteriaWrapper,
       settings.Inbound_Email_Advance__c,
       inboundPattern
     );
@@ -98,34 +103,34 @@ public with sharing class TaskHelper {
       String.isNotBlank(settings.Inbound_Email_Subject_Filter__c);
     System.debug(JSON.serializePretty(thisSetting.Outbound_Email_Advance__c));
     Boolean outboundMatched = isApplicable(
-      theTask,
+      criteriaWrapper,
       settings.Outbound_Email_Advance__c,
       outboundPattern
     );
     Boolean callMatched = isApplicable(
-      theTask,
+      criteriaWrapper,
       settings.Call_Advance__c,
       callPattern
     );
     Boolean engagedCallMatched = isApplicable(
-      theTask,
+      criteriaWrapper,
       settings.Engaged_Call_Advance__c,
       engagedCallPattern
     );
     Boolean giftMatched = isApplicable(
-      theTask,
+      criteriaWrapper,
       settings.Gift_Advance1__c,
       null
     );
     Boolean inMailMatched = isApplicable(
-      theTask,
+      criteriaWrapper,
       settings.InMail_Advance1__c,
       null
     );
     Boolean meetingSetMatched =
       settings.Meeting_Object__c == 'Task' &&
       isApplicable(
-        theTask,
+        criteriaWrapper,
         settings.Outbound_Meeting_Advance__c,
         meetingSetPattern
       );
@@ -200,14 +205,21 @@ public with sharing class TaskHelper {
   public static Map<Id, ActivityStats> getActivityStatsByWhoId(
     List<Task> tasks
   ) {
+    return getActivityStatsByWhoId(tasks, null);
+  }
+
+  public static Map<Id, ActivityStats> getActivityStatsByWhoId(
+    List<Task> tasks,
+    Map<Id, Contact> whoById
+  ) {
     Map<Id, ActivityStats> activityStatsByWhoId = new Map<Id, ActivityStats>();
     for (Task t : tasks) {
       activityStatsByWhoId = TaskHelper.getTaskActivityStatusMap(
         activityStatsByWhoId,
-        t
+        t,
+        whoById.get(t.WhoId)
       );
     }
-
     return activityStatsByWhoId;
   }
 
@@ -227,38 +239,52 @@ public with sharing class TaskHelper {
     return thePattern;
   }
 
+  private static Boolean matchesFilter(
+    String operator,
+    String taskValue,
+    String filterVal
+  ) {
+    if (operator.toLowerCase() == '=')
+      return taskValue == filterVal;
+    if (operator.toLowerCase() == '!=')
+      return taskValue != filterVal;
+    if (operator.toLowerCase() == 'starts')
+      return taskValue.startsWithIgnoreCase(filterVal);
+    if (operator.toLowerCase() == 'ends')
+      return taskValue.endsWithIgnoreCase(filterVal);
+    if (operator.toLowerCase() == 'contains')
+      return taskValue.containsIgnoreCase(filterVal);
+    if (operator.toLowerCase() == 'notcontains')
+      return !taskValue.containsIgnoreCase(filterVal);
+    return false;
+  }
+
   public static boolean isApplicable(
-    SObject record,
+    ActivityContactWrapper tw,
     String filterString,
     Pattern filterPattern
   ) {
-    System.debug(filterString + ' ' + filterPattern);
-    // for blank filters on sobjects that are not activities, never match
-    if (
-      String.isBlank(filterString) &&
-      record.Id.getSobjectType() != Task.SObjectType &&
-      record.Id.getSobjectType() != Event.SObjectType
-    ) {
+    if (tw == null || (tw.t == null && tw.e == null))
+      return false;
+    SObject record;
+    if (tw.t == null) {
+        record = tw.e;
+    } else {
+        record = tw.t;
+    }
+    if (String.isBlank(filterString)) {
+      if (
+        record.Id.getSobjectType() == Task.SObjectType ||
+        record.Id.getSobjectType() == Event.SObjectType
+      ) {
+        String subject = record.get('Subject') == null
+          ? null
+          : String.valueOf(record.get('Subject'));
+        return filterPattern == null ||
+          (subject != null && filterPattern.matcher(subject).find());
+      }
       return false;
     }
-    if (
-      String.isBlank(filterString) &&
-      (record.Id.getSobjectType() == Task.SObjectType ||
-      record.Id.getSobjectType() == Event.SObjectType)
-    ) {
-      System.debug('isApplicable filterString is blank');
-      String subject = record.get('Subject') != null
-        ? String.valueOf(record.get('Subject'))
-        : null;
-      // Maintain backword functionality if filter string is blank
-      System.debug('isApplicable filterPattern:' + filterPattern);
-      boolean returnResponse =
-        filterPattern == null || filterPattern.matcher(subject).find();
-      System.debug('isApplicable returnResponse:' + returnResponse);
-      return returnResponse;
-    }
-    System.debug('isApplicable filterString is not blank');
-    Map<Integer, String> criteriaRes = new Map<Integer, String>();
     FieldFilter fieldFilter = (FieldFilter) JSON.deserialize(
       filterString,
       FieldFilter.class
@@ -266,35 +292,21 @@ public with sharing class TaskHelper {
     if (
       fieldFilter.filters == null ||
       fieldFilter.filters.isEmpty() ||
-      fieldFilter.disabled == true
+      fieldFilter.disabled
     ) {
-      // Filter is disabled than return false;
-      return fieldFilter.disabled != true;
+      return !fieldFilter.disabled;
     }
-    integer count = 1;
+    Map<Integer, String> criteriaRes = new Map<Integer, String>();
+    Integer count = 1;
     String filterLogic = fieldFilter.filterLogic;
     for (FieldFilterRow rowFilter : fieldFilter.filters) {
-      Object fieldValue = null;
       String[] keyPath = rowFilter.field.split('\\.');
-      SObject tempObj = record;
-      for (integer i = 0; i < keyPath.size(); i++) {
-        if (tempObj == null) {
-          break;
-        }
-        if (i + 1 == keyPath.size()) {
-          fieldValue = tempObj.get(keyPath.get(i));
-        } else {
-          tempObj = tempObj.getSObject(keyPath.get(i));
-        }
-      }
-      String taskValue = fieldValue == null ? '' : String.valueOf(fieldValue);
-      System.debug('fieldValue :: ' + taskValue);
-      String operator = rowFilter.operator;
+      Object fieldValue = resolveFieldValue(tw, keyPath);
+      String actualVal = fieldValue == null ? '' : String.valueOf(fieldValue);
       String filterVal = rowFilter.value == null ? '' : rowFilter.value;
-      Boolean matchFilter = matchesFilter(operator, taskValue, filterVal);
-      criteriaRes.put(count, String.valueof(matchFilter));
+      Boolean matched = matchesFilter(rowFilter.operator, actualVal, filterVal);
+      criteriaRes.put(count, String.valueOf(matched));
       count++;
-      System.debug('match: ' + criteriaRes);
     }
     if (String.isBlank(filterLogic)) {
       filterLogic = String.join(criteriaRes.values(), ' AND ');
@@ -306,45 +318,34 @@ public with sharing class TaskHelper {
         );
       }
     }
-    boolean eval = BooleanExpression.evaluate(filterLogic);
-    return eval;
+    return BooleanExpression.evaluate(filterLogic);
   }
 
-  private static Boolean matchesFilter(
-    String operator,
-    String taskValue,
-    String filterVal
+  private static Object resolveFieldValue(
+    ActivityContactWrapper tw,
+    String[] keyPath
   ) {
-    Boolean matchFilter = false;
-    switch on operator.toLowerCase() {
-      when '=' {
-        // compare equals
-        matchFilter = taskValue == filterVal;
-      }
-      when '!=' {
-        // compare not equals
-        matchFilter = taskValue != filterVal;
-      }
-      when 'starts' {
-        // compare starts with
-        matchFilter = taskValue.startsWithIgnoreCase(filterVal);
-      }
-      when 'ends' {
-        // compare ends with
-        matchFilter = taskValue.endsWithIgnoreCase(filterVal);
-      }
-      when 'contains' {
-        // compare contains
-        System.debug('task value: ' + taskValue);
-        System.debug('match: ' + filterVal);
-        matchFilter = taskValue.containsIgnoreCase(filterVal);
-      }
-      when 'notcontains' {
-        // compare not contains
-        matchFilter = !taskValue.containsIgnoreCase(filterVal);
-      }
+    SObject record;
+    if (tw.t != null) {
+        record = tw.t;
+    } else {
+        record = tw.e;
     }
-
-    return matchFilter;
+    if (
+      keyPath.size() > 0 &&
+      keyPath[0].equalsIgnoreCase('Who') &&
+      tw.c != null
+    ) {
+      record = tw.c;
+    }
+    for (Integer i = 1; i < keyPath.size(); i++) {
+      if (record == null)
+        break;
+      if (i + 1 == keyPath.size()) {
+        return record.get(keyPath[i]);
+      }
+      record = record.getSObject(keyPath[i]);
+    }
+    return record;
   }
 }

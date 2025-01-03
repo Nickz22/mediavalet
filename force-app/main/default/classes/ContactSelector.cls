@@ -75,6 +75,24 @@ public with sharing class ContactSelector {
     ];
   }
 
+  public List<Contact> selectContactsWithAllAccountFields(Set<Id> ids) {
+    List<String> accountFields = new List<String>();
+    for (
+      Schema.SObjectField field : Account.SObjectType.getDescribe()
+        .fields.getMap()
+        .values()
+    ) {
+      if (field.getDescribe().isAccessible()) {
+        accountFields.add('Account.' + field.getDescribe().getName());
+      }
+    }
+    String query =
+      'SELECT Name, AccountId, OwnerId, Owner.Name, ' +
+      String.join(accountFields, ', ') +
+      ' FROM Contact WHERE Id IN :ids WITH USER_MODE';
+    return Database.query(query);
+  }
+
   public List<Contact> selectByIdsAndAccountId(Set<Id> ids, Id accountId) {
     return [
       SELECT Id
