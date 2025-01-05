@@ -217,7 +217,9 @@ public with sharing class TaskHelper {
       activityStatsByWhoId = TaskHelper.getTaskActivityStatusMap(
         activityStatsByWhoId,
         t,
-        whoById.get(t.WhoId)
+        whoById == null || !whoById.containsKey(t.WhoId)
+          ? null
+          : whoById.get(t.WhoId)
       );
     }
     return activityStatsByWhoId;
@@ -268,9 +270,9 @@ public with sharing class TaskHelper {
       return false;
     SObject record;
     if (tw.t == null) {
-        record = tw.e;
+      record = tw.e;
     } else {
-        record = tw.t;
+      record = tw.t;
     }
     if (String.isBlank(filterString)) {
       if (
@@ -290,7 +292,9 @@ public with sharing class TaskHelper {
       filterString,
       FieldFilter.class
     );
-    fieldFilter.disabled = fieldFilter.disabled == null ? false : fieldFilter.disabled;
+    fieldFilter.disabled = fieldFilter.disabled == null
+      ? false
+      : fieldFilter.disabled;
     if (
       fieldFilter.filters == null ||
       fieldFilter.filters.isEmpty() ||
@@ -329,9 +333,9 @@ public with sharing class TaskHelper {
   ) {
     SObject record;
     if (tw.t != null) {
-        record = tw.t;
+      record = tw.t;
     } else {
-        record = tw.e;
+      record = tw.e;
     }
     if (
       keyPath.size() > 0 &&
@@ -339,6 +343,12 @@ public with sharing class TaskHelper {
       tw.c != null
     ) {
       record = tw.c;
+    } else if (
+      keyPath.size() > 0 &&
+      keyPath[0].equalsIgnoreCase('Who') &&
+      tw.c == null
+    ) {
+      return null;
     }
     for (Integer i = 1; i < keyPath.size(); i++) {
       if (record == null)

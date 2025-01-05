@@ -1,43 +1,143 @@
 @isTest
 private class MatchesParentCriteriaTest {
   @isTest
-  static void testParentCriteriaWithTaskFilter() {
+  static void testParentCriteriaWithTaskFilterInDb() {
+    FieldFilter filter = new FieldFilter();
+    filter.disabled = false;
+    filter.filterLogic = '1 AND 2';
+    filter.filters = new List<FieldFilterRow>{
+      new FieldFilterRow('Who.Account.Name', '=', 'ParentCriteriaTest'),
+      new FieldFilterRow('Subject', 'contains', 'Hello')
+    };
+
+    CustomMetadataCache.withOutboundEmailAdvance = JSON.serialize(filter);
+    CustomMetadataCache.enableActivateAutomatically = true;
+    Settings__mdt settings = CustomMetadataCache.setting;
+
     System.runAs(TestFactory.ioAgent) {
-      // Build a sample filter referencing parent fields
-      FieldFilter filter = new FieldFilter();
-      filter.disabled = false;
-      filter.filterLogic = '1 AND 2';
-      filter.filters = new List<FieldFilterRow>{
-        new FieldFilterRow('Who.Account.Name', '=', 'ParentCriteriaTest'),
-        new FieldFilterRow('Subject', 'contains', 'Hello')
-      };
-      String filterString = JSON.serialize(filter);
-
-      // Create an Account, Contact, and Task to satisfy the filter
-      Account acc = new Account(Name = 'ParentCriteriaTest', Territory__c = 'United States');
-      insert acc;
-      Contact con = new Contact(
-        FirstName = 'ParentTest',
-        LastName = 'Contact',
-        AccountId = acc.Id
+      Account testAccount = new Account(
+        Name = 'ParentCriteriaTest',
+        Territory__c = 'United States'
       );
-      insert con;
-      Task t = new Task(
-        Subject = 'Hello from Parent Criteria Test',
-        WhoId = con.Id
-      );
-      insert t;
+      insert testAccount;
 
-      // Confirm TaskHelper.isApplicable picks up on parent's field
+      List<Contact> testContacts = new List<Contact>();
+      for (Integer i = 0; i < 3; i++) {
+        testContacts.add(
+          new Contact(
+            FirstName = 'ParentTest' + i,
+            LastName = 'Contact' + i,
+            AccountId = testAccount.Id
+          )
+        );
+      }
+      insert testContacts;
+
+      Integer threshold = Integer.valueOf(
+        settings.Activities_Created_by_User1__c
+      );
+      List<Task> tasks = new List<Task>();
+      for (Contact c : testContacts) {
+        for (Integer i = 0; i < threshold; i++) {
+          tasks.add(
+            new Task(
+              Subject = 'Hello from Parent Criteria Test ' + i,
+              WhoId = c.Id
+            )
+          );
+        }
+      }
+      insert tasks;
+
       Test.startTest();
-      con = new ContactSelector().selectContactsWithAllAccountFields(new Set<Id>{con.Id})[0];
-      ActivityContactWrapper criteriaWrapper = new ActivityContactWrapper(t, con);
-      Boolean applicable = TaskHelper.isApplicable(criteriaWrapper, filterString, null);
+      testContacts[0] = new ContactSelector()
+        .selectContactsWithAllAccountFields(
+          new Set<Id>{ testContacts[0].Id }
+        )[0];
+      ActivityContactWrapper criteriaWrapper = new ActivityContactWrapper(
+        tasks[0],
+        testContacts[0]
+      );
       Test.stopTest();
+    }
 
-      System.assert(
-        applicable,
-        'Filter should match on parent Account name and Task subject'
+    System.runAs(TestFactory.ioAdmin) {
+      System.assertEquals(
+        1,
+        [
+          SELECT COUNT()
+          FROM Status__c
+          WHERE
+            Account__c IN (
+              SELECT Id
+              FROM Account
+              WHERE Name = 'ParentCriteriaTest'
+            )
+        ],
+        'Expected the account to have a Status__c record if threshold is met'
+      );
+    }
+  }
+
+  @isTest
+  static void testContactFieldUsage() {
+    FieldFilter filter = new FieldFilter();
+    filter.disabled = false;
+    filter.filterLogic = '1 AND 2';
+    filter.filters = new List<FieldFilterRow>{
+      new FieldFilterRow('Who.Name', '=', '_ ContactFieldTest'),
+      new FieldFilterRow('Subject', 'contains', 'HelloFromContactTest')
+    };
+
+    CustomMetadataCache.withOutboundEmailAdvance = JSON.serialize(filter);
+    CustomMetadataCache.enableActivateAutomatically = true;
+    Settings__mdt settings = CustomMetadataCache.setting;
+    Account acc;
+    System.runAs(TestFactory.ioAgent) {
+      acc = new Account(
+        Name = 'ContactFieldTestAccount',
+        Territory__c = 'United States'
+      );
+      insert acc;
+
+      List<Contact> testContacts = new List<Contact>();
+      for (Integer i = 0; i < 3; i++) {
+        testContacts.add(
+          new Contact(
+            FirstName = '_',
+            LastName = 'ContactFieldTest',
+            AccountId = acc.Id
+          )
+        );
+      }
+      insert testContacts;
+
+      Integer threshold = Integer.valueOf(
+        settings.Activities_Created_by_User1__c
+      );
+      List<Task> tasks = new List<Task>();
+      for (Contact c : testContacts) {
+        for (Integer i = 0; i < threshold; i++) {
+          tasks.add(
+            new Task(Subject = 'HelloFromContactTest subject', WhoId = c.Id)
+          );
+        }
+      }
+
+      Test.startTest();
+      insert tasks;
+      Test.stopTest();
+    }
+
+    System.runAs(TestFactory.ioAdmin) {
+      System.assertEquals(
+        1,
+        [
+          SELECT COUNT()
+          FROM Status__c
+          WHERE Account__c = :acc.Id
+        ],
+        'Expected the account to have a Status__c record if threshold is met'
       );
     }
   }

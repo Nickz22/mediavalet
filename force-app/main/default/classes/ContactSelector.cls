@@ -76,6 +76,16 @@ public with sharing class ContactSelector {
   }
 
   public List<Contact> selectContactsWithAllAccountFields(Set<Id> ids) {
+    List<String> contactFields = new List<String>();
+    for (
+      Schema.SObjectField field : Contact.SObjectType.getDescribe()
+        .fields.getMap()
+        .values()
+    ) {
+      if (field.getDescribe().isAccessible()) {
+        contactFields.add(field.getDescribe().getName());
+      }
+    }
     List<String> accountFields = new List<String>();
     for (
       Schema.SObjectField field : Account.SObjectType.getDescribe()
@@ -87,7 +97,9 @@ public with sharing class ContactSelector {
       }
     }
     String query =
-      'SELECT Name, AccountId, OwnerId, Owner.Name, ' +
+      'SELECT ' +
+      String.join(contactFields, ', ') +
+      ', ' +
       String.join(accountFields, ', ') +
       ' FROM Contact WHERE Id IN :ids WITH USER_MODE';
     return Database.query(query);

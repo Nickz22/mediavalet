@@ -72,6 +72,7 @@ public with sharing class RollupEngine {
       newTasks,
       whoById
     );
+    System.debug(JSON.serializePretty(newActivityStatByWhoId));
     Map<Id, ActivityStats> nonNewActivityStatByWhoId = TaskHelper.getActivityStatsByWhoId(
       new TaskSelector()
         .selectIoOwnedTasksWithinTrackingPeriodByWhoIdsNotInIds(
@@ -90,8 +91,6 @@ public with sharing class RollupEngine {
         .selectCurrentActivationsByAccountIds(accountIds),
       C.OUTBOUND_CONTACT_ACTIVATION_CONTACT_FIELD
     );
-
-    System.debug(JSON.serializePretty(currentOcaByContactId.values()));
 
     Map<Id, User> ioUserById = new Map<Id, User>(PermissionsCache.ioUsers);
     List<Outbound_Contact_Activation__c> newOcas = new List<Outbound_Contact_Activation__c>();
