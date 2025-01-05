@@ -101,6 +101,7 @@ public class ClaimAccountLimitExceededTest {
         // Create a new Account
         Account a = new Account();
         a.Name = ACCOUNT_NAME_PREFIX + i;
+        a.Territory__c = 'United States';
 
         uow.registerNew(a);
 

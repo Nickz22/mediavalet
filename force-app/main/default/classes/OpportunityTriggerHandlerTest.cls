@@ -81,7 +81,7 @@ private with sharing class OpportunityTriggerHandlerTest {
       Contact c = [SELECT AccountId FROM Contact];
       Opportunity opp = new Opportunity(
         Name = 'do not attribute this opp',
-        StageName = TestFactory.openOpportunityStages[0],
+        StageName = '0 - AE Qualification',
         Amount = 1000,
         CloseDate = Date.today(),
         AccountId = c.AccountId
@@ -124,7 +124,7 @@ private with sharing class OpportunityTriggerHandlerTest {
       Contact c = [SELECT AccountId FROM Contact];
       Opportunity opp = new Opportunity(
         Name = 'do not attribute this opp',
-        StageName = TestFactory.openOpportunityStages[0],
+        StageName = '0 - AE Qualification',
         Amount = 1000,
         CloseDate = Date.today(),
         AccountId = c.AccountId
@@ -166,7 +166,7 @@ private with sharing class OpportunityTriggerHandlerTest {
       Contact c = [SELECT AccountId FROM Contact];
       Opportunity opp = new Opportunity(
         Name = 'do not attribute this opp',
-        StageName = TestFactory.openOpportunityStages[0],
+        StageName = '0 - AE Qualification',
         Amount = 1000,
         CloseDate = Date.today(),
         AccountId = c.AccountId
@@ -186,7 +186,10 @@ private with sharing class OpportunityTriggerHandlerTest {
       OB_Metrix_Install_Settings__c installSetting = OB_Metrix_Install_Settings__c.getOrgDefaults();
       installSetting.Installed__c = Date.today();
       upsert installSetting;
-      Account a = new Account(Name = 'Test Account');
+      Account a = new Account(
+        Name = 'Test Account',
+        Territory__c = 'United States'
+      );
       insert a;
       Contact c = new Contact(LastName = 'Test Contact', AccountId = a.Id);
       insert c;

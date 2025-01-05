@@ -383,10 +383,9 @@ public class CallConnectActivityTest {
       Test.stopTest();
     }
 
-
     System.runAs(TestFactory.ioAdmin) {
-        // assertions
-        List<Outbound_Contact_Activation__c> activations = new OutboundContactActivationSelector()
+      // assertions
+      List<Outbound_Contact_Activation__c> activations = new OutboundContactActivationSelector()
         .selectCurrentActivationsByContactIds(
           Pluck.ids(testContacts, C.ID_FIELD)
         );
@@ -433,7 +432,7 @@ public class CallConnectActivityTest {
           SELECT COUNT()
           FROM Status__c
           WHERE
-          Prospecting_Status__c = :C.OUTBOUND_PROSPECTING_STATUS_UNRESPONSIVE
+            Prospecting_Status__c = :C.OUTBOUND_PROSPECTING_STATUS_UNRESPONSIVE
         ]
       );
     }
@@ -474,9 +473,9 @@ public class CallConnectActivityTest {
     System.runAs(TestFactory.ioAdmin) {
       // assertions
       List<Outbound_Contact_Activation__c> activations = new OutboundContactActivationSelector()
-      .selectCurrentActivationsByContactIds(
-        Pluck.ids(testContacts, C.ID_FIELD)
-      );
+        .selectCurrentActivationsByContactIds(
+          Pluck.ids(testContacts, C.ID_FIELD)
+        );
 
       System.assertEquals(activations.size(), testContacts.size());
     }
@@ -571,7 +570,8 @@ public class CallConnectActivityTest {
 
       // make preexisting task/contact/account data
       Account preexistingAccount = new Account(
-        Name = 'preexisting task account'
+        Name = 'preexisting task account',
+        Territory__c = 'United States'
       );
       uow.registerNew(preexistingAccount);
       Contact preexistingContact = new Contact(

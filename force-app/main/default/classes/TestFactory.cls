@@ -156,10 +156,10 @@ public with sharing class TestFactory {
 
   public static void generateMasterData() {
     List<Account> testAccounts = new List<Account>{
-      new Account(Name = 'Test Account 1'),
-      new Account(Name = 'Test Account 2'),
-      new Account(Name = 'Test Account 3'),
-      new Account(Name = 'Test Account 4')
+      new Account(Name = 'Test Account 1', Territory__c = 'United States'),
+      new Account(Name = 'Test Account 2', Territory__c = 'United States'),
+      new Account(Name = 'Test Account 3', Territory__c = 'United States'),
+      new Account(Name = 'Test Account 4', Territory__c = 'United States')
     };
     insert testAccounts;
 

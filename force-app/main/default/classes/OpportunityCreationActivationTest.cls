@@ -339,7 +339,10 @@ public class OpportunityCreationActivationTest {
         }
       );
       //   create account/contact with one prospecting activity
-      Account accountWithTask = new Account(Name = 'account with task');
+      Account accountWithTask = new Account(
+        Name = 'account with task',
+        Territory__c = 'United States'
+      );
       uow.registerNew(accountWithTask);
 
       Contact contactWithTask = new Contact(
@@ -360,7 +363,10 @@ public class OpportunityCreationActivationTest {
       uow.registerNew(t);
 
       // create account/contact with no prospecting activity
-      Account accountWithoutTask = new Account(Name = 'account without task');
+      Account accountWithoutTask = new Account(
+        Name = 'account without task',
+        Territory__c = 'United States'
+      );
       uow.registerNew(accountWithoutTask);
 
       Contact contactWithoutTask = new Contact(

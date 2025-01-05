@@ -180,7 +180,10 @@ public with sharing class EventTriggerHandlerTest {
       OB_Metrix_Install_Settings__c installSetting = OB_Metrix_Install_Settings__c.getOrgDefaults();
       installSetting.Installed__c = Date.today();
       upsert installSetting;
-      Account a = new Account(Name = 'Test Account');
+      Account a = new Account(
+        Name = 'Test Account',
+        Territory__c = 'United States'
+      );
       insert a;
       Contact c = new Contact(LastName = 'Test Contact', AccountId = a.Id);
       insert c;

@@ -576,7 +576,8 @@ public class InmailActivityTest {
 
       // make preexisting task/contact/account data
       Account preexistingAccount = new Account(
-        Name = 'preexisting task account'
+        Name = 'preexisting task account',
+        Territory__c = 'United States'
       );
       uow.registerNew(preexistingAccount);
       Contact preexistingContact = new Contact(

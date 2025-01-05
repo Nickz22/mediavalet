@@ -93,11 +93,20 @@ public with sharing class TaskHelper {
       theTask,
       contact
     );
-    Boolean inboundMatched = isApplicable(
-      criteriaWrapper,
-      settings.Inbound_Email_Advance__c,
-      inboundPattern
-    );
+    Boolean inboundMatched = false;
+    List<String> trimmedBlacklist = new List<String>();
+    for (
+      String entry : settings.Inbound_Email_Subject_Blacklist__c?.split(',')
+    ) {
+      trimmedBlacklist.add(entry.trim());
+    }
+    if (!trimmedBlacklist.containsIgnoreCase(theTask.Subject)) {
+      inboundMatched = isApplicable(
+        criteriaWrapper,
+        settings.Inbound_Email_Advance__c,
+        inboundPattern
+      );
+    }
     Boolean inboundFilterMatched =
       inboundFilterPattern.matcher(theTask.Subject).find() &&
       String.isNotBlank(settings.Inbound_Email_Subject_Filter__c);

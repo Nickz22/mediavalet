@@ -263,7 +263,10 @@ public class TaskSettingsTest {
       uow.registerNew(testContact);
 
       // make cooling off account
-      Account coolOffAccount = new Account(Name = 'cooling off');
+      Account coolOffAccount = new Account(
+        Name = 'cooling off',
+        Territory__c = 'United States'
+      );
       uow.registerNew(coolOffAccount);
 
       Contact coolingOffContact = new Contact(
@@ -290,7 +293,10 @@ public class TaskSettingsTest {
       uow.registerNew(coolingOffStatus);
 
       // make open opportunity account
-      Account openOpportunityAccount = new Account(Name = 'open opportunity');
+      Account openOpportunityAccount = new Account(
+        Name = 'open opportunity',
+        Territory__c = 'United States'
+      );
 
       uow.registerNew(openOpportunityAccount);
 

@@ -94,7 +94,7 @@ public with sharing class TaskTriggerHandlerTest {
     );
   }
 
-	@isTest
+  @isTest
   static void whenProspectingActivityCreated_andExactCoolOffHasElapsedSinceLastProspectingActivity_thenContactShouldNotBeActivated() {
     CustomMetadataCache.withXActivitiesPerContact = 2;
     CustomMetadataCache.withWaitPeriod = 4;
@@ -109,7 +109,7 @@ public with sharing class TaskTriggerHandlerTest {
     Test.setCreatedDate(t.Id, Date.today().addDays(-4));
     update t;
 
-		/**
+    /**
      * GIVEN app was installed 2 days ago
      *  AND a prospecting activity was created 2 days ago
      *  AND the cool off period is 4 days
@@ -132,7 +132,7 @@ public with sharing class TaskTriggerHandlerTest {
     }
 
     System.assertEquals(
-			0,
+      0,
       [SELECT COUNT() FROM Outbound_Contact_Activation__c]
     );
   }
@@ -152,7 +152,7 @@ public with sharing class TaskTriggerHandlerTest {
     Test.setCreatedDate(t.Id, Date.today().addDays(-5));
     update t;
 
-		/**
+    /**
      * GIVEN app was installed 2 days ago
      *  AND a prospecting activity was created 5 days ago
      *  AND the cool off period is 4 days
@@ -187,7 +187,10 @@ public with sharing class TaskTriggerHandlerTest {
       OB_Metrix_Install_Settings__c installSetting = OB_Metrix_Install_Settings__c.getOrgDefaults();
       installSetting.Installed__c = Date.today();
       upsert installSetting;
-      Account a = new Account(Name = 'Test Account');
+      Account a = new Account(
+        Name = 'Test Account',
+        Territory__c = 'United States'
+      );
       insert a;
       Contact c = new Contact(LastName = 'Test Contact', AccountId = a.Id);
       insert c;

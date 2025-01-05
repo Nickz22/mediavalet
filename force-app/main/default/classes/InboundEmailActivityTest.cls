@@ -503,8 +503,10 @@ public class InboundEmailActivityTest {
           Task.SObjectType
         }
       );
-      // make regular test account/contact
-      Account testAccount = new Account(Name = 'test');
+      Account testAccount = new Account(
+        Name = 'test',
+        Territory__c = 'United States'
+      );
       uow.registerNew(testAccount);
 
       Contact testContact = new Contact(
@@ -515,8 +517,10 @@ public class InboundEmailActivityTest {
       uow.registerRelationship(testContact, Contact.AccountId, testAccount);
       uow.registerNew(testContact);
 
-      // make bulk test account/contacts
-      Account bulkTestAccount = new Account(Name = 'bulk test account');
+      Account bulkTestAccount = new Account(
+        Name = 'bulk test account',
+        Territory__c = 'United States'
+      );
       uow.registerNew(bulkTestAccount);
       List<Contact> bulkContacts = new List<Contact>();
       Integer contactPerAccountActivationThreshold = CONTACT_PER_ACCOUNT_ACTIVATION_THRESHOLD;
@@ -531,8 +535,10 @@ public class InboundEmailActivityTest {
         uow.registerNew(c);
       }
 
-      // make stale activated account/contacts
-      Account staleActivatedAccount = new Account(Name = 'stale account test');
+      Account staleActivatedAccount = new Account(
+        Name = 'stale account test',
+        Territory__c = 'United States'
+      );
       uow.registerNew(staleActivatedAccount);
       Status__c staleStatus = new Status__c(
         Prospecting_Status__c = C.OUTBOUND_PROSPECTING_STATUS_UNRESPONSIVE
@@ -572,9 +578,9 @@ public class InboundEmailActivityTest {
         uow.registerNew(staleActivation);
       }
 
-      // make preexisting task/contact/account data
       Account preexistingAccount = new Account(
-        Name = 'preexisting task account'
+        Name = 'preexisting task account',
+        Territory__c = 'United States'
       );
       uow.registerNew(preexistingAccount);
       Contact preexistingContact = new Contact(

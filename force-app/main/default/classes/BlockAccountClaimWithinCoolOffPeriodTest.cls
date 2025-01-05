@@ -300,7 +300,10 @@ public class BlockAccountClaimWithinCoolOffPeriodTest {
         }
       );
       // create nurture account
-      Account nurtureAccount = new Account(Name = NURTURE_ACCOUNT_NAME);
+      Account nurtureAccount = new Account(
+        Name = NURTURE_ACCOUNT_NAME,
+        Territory__c = 'United States'
+      );
 
       uow.registerNew(nurtureAccount);
 
@@ -319,7 +322,8 @@ public class BlockAccountClaimWithinCoolOffPeriodTest {
 
       // create unresponsive account
       Account unresponsiveAccount = new Account(
-        Name = UNRESPONSIVE_ACCOUNT_NAME
+        Name = UNRESPONSIVE_ACCOUNT_NAME,
+        Territory__c = 'United States'
       );
       uow.registerNew(unresponsiveAccount);
 

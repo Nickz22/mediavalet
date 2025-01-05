@@ -114,7 +114,7 @@ public class ClaimAccountTest {
   @TestSetup
   static void makeData() {
     System.runAs(TestFactory.ioAgent) {
-      insert new Account(Name = 'Test Account');
+      insert new Account(Name = 'Test Account', Territory__c = 'United States');
     }
   }
 }
